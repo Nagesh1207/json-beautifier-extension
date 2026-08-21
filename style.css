@@ -1,0 +1,42 @@
+body {
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Courier New', monospace;
+  margin: 0;
+  padding: 20px;
+}
+
+#json-rendered {
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background-color: #252526;
+  padding: 20px;
+  border-radius: 6px;
+  border: 1px solid #333;
+}
+
+/* Syntax Highlighting Color Scheme */
+.json-key {
+  color: #9cdcfe; /* Light Blue */
+  font-weight: bold;
+}
+
+.json-string {
+  color: #ce9178; /* Orange / Coral */
+}
+
+.json-number {
+  color: #b5cea8; /* Light Green */
+}
+
+.json-boolean {
+  color: #569cd6; /* Bright Blue */
+  font-weight: bold;
+}
+
+.json-null {
+  color: #569cd6; /* Bright Blue */
+  font-weight: bold;
+}
