@@ -1,36 +1,43 @@
-(async function () {
-  try {
-    // Fetch raw page bytes without custom headers to avoid triggering internal API routes
-    const response = await fetch(window.location.href);
-    const rawText = (await response.text()).trim();
-
-    // Ignore standard HTML pages (e.g., Bitbucket, GitHub, standard web apps)
-    if (
-      rawText.startsWith('<!DOCTYPE') ||
-      rawText.startsWith('<html') ||
-      rawText.startsWith('<HTML')
-    ) {
+(function () {
+  function formatJsonPage() {
+    // 1. Skip standard web pages (e.g., Bitbucket) that have multiple DOM elements
+    if (document.body && document.body.children.length > 1) {
       return;
     }
 
-    // Verify valid JSON structural boundaries
+    // 2. Extract raw text from Chrome's pre tag or body once DOM is ready
+    const preElement = document.querySelector('pre');
+    const rawText = (
+      preElement ? preElement.textContent : (document.body ? document.body.textContent : '')
+    ).trim();
+
+    // 3. Verify valid JSON boundaries
     if (
       (rawText.startsWith('{') && rawText.endsWith('}')) ||
       (rawText.startsWith('[') && rawText.endsWith(']'))
     ) {
-      const jsonObject = JSON.parse(rawText);
+      try {
+        const jsonObject = JSON.parse(rawText);
 
-      // Clean browser DOM and render formatted JSON
-      document.documentElement.innerHTML = '<head></head><body></body>';
+        // Wipe unformatted content and render formatted DOM
+        document.body.innerHTML = '';
 
-      const pre = document.createElement('pre');
-      pre.id = 'json-rendered';
-      pre.appendChild(buildJsonDom(jsonObject, 0));
+        const pre = document.createElement('pre');
+        pre.id = 'json-rendered';
+        pre.appendChild(buildJsonDom(jsonObject, 0));
 
-      document.body.appendChild(pre);
+        document.body.appendChild(pre);
+      } catch (err) {
+        // Leave page untouched if JSON.parse fails
+      }
     }
-  } catch (err) {
-    // Leave page intact if not valid JSON
+  }
+
+  // Ensure DOM is parsed before reading textContent
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', formatJsonPage);
+  } else {
+    formatJsonPage();
   }
 
   function buildJsonDom(obj, indentLevel = 0) {
