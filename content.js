@@ -1,23 +1,28 @@
 (async function () {
   try {
-    // Re-fetch the raw page text directly from the server as plain text
-    // to bypass Chrome's native HTML DOM auto-parsing
-    const response = await fetch(window.location.href, {
-      headers: { Accept: 'application/json, text/plain, */*' }
-    });
+    // Fetch raw page bytes without custom headers to avoid triggering internal API routes
+    const response = await fetch(window.location.href);
     const rawText = (await response.text()).trim();
 
-    // Verify structural JSON boundaries
+    // Ignore standard HTML pages (e.g., Bitbucket, GitHub, standard web apps)
+    if (
+      rawText.startsWith('<!DOCTYPE') ||
+      rawText.startsWith('<html') ||
+      rawText.startsWith('<HTML')
+    ) {
+      return;
+    }
+
+    // Verify valid JSON structural boundaries
     if (
       (rawText.startsWith('{') && rawText.endsWith('}')) ||
       (rawText.startsWith('[') && rawText.endsWith(']'))
     ) {
       const jsonObject = JSON.parse(rawText);
 
-      // Wipe Chrome's distorted DOM
+      // Clean browser DOM and render formatted JSON
       document.documentElement.innerHTML = '<head></head><body></body>';
 
-      // Attach formatted JSON node
       const pre = document.createElement('pre');
       pre.id = 'json-rendered';
       pre.appendChild(buildJsonDom(jsonObject, 0));
@@ -25,7 +30,7 @@
       document.body.appendChild(pre);
     }
   } catch (err) {
-    // Not valid JSON or endpoint threw a fetch error; leave original page intact
+    // Leave page intact if not valid JSON
   }
 
   function buildJsonDom(obj, indentLevel = 0) {
