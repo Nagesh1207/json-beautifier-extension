@@ -1,15 +1,36 @@
 {
   "manifest_version": 3,
   "name": "API JSON Beautifier",
-  "version": "1.2",
+  "version": "1.4",
   "description": "Automatically formats raw JSON API responses in browser tab.",
-  "permissions": ["webNavigation"],
+  "permissions": [
+    "webNavigation",
+    "declarativeNetRequest"
+  ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["style.css"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "style.css"
+      ],
       "run_at": "document_start"
     }
-  ]
+  ],
+  "host_permissions": [
+    "*://*.inuxu.net/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "json_content_type",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  }
 }

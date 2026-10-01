@@ -5,35 +5,81 @@
       return;
     }
 
-    // 2. Extract raw text from Chrome's pre tag or body once DOM is ready
+    // 2. Extract raw text directly from the DOM
     const preElement = document.querySelector('pre');
     const rawText = (
       preElement ? preElement.textContent : (document.body ? document.body.textContent : '')
     ).trim();
 
-    // 3. Verify valid JSON boundaries
-    if (
-      (rawText.startsWith('{') && rawText.endsWith('}')) ||
-      (rawText.startsWith('[') && rawText.endsWith(']'))
-    ) {
-      try {
-        const jsonObject = JSON.parse(rawText);
-
-        // Wipe unformatted content and render formatted DOM
-        document.body.innerHTML = '';
-
-        const pre = document.createElement('pre');
-        pre.id = 'json-rendered';
-        pre.appendChild(buildJsonDom(jsonObject, 0));
-
-        document.body.appendChild(pre);
-      } catch (err) {
-        // Leave page untouched if JSON.parse fails
-      }
-    }
+    renderJson(rawText);
   }
 
-  // Ensure DOM is parsed before reading textContent
+  function looksLikeJson(text) {
+    return (
+      (text.startsWith('{') && text.endsWith('}')) ||
+      (text.startsWith('[') && text.endsWith(']'))
+    );
+  }
+
+  // Renders the text as formatted JSON; returns false if it is not valid JSON/JSONP
+  function renderJson(rawText) {
+    rawText = rawText.trim();
+
+    // Extract inner JSON if payload is JSONP (e.g., callback_NativeAds({...});)
+    let isJsonp = false;
+    let jsonpPrefix = '';
+    let jsonpSuffix = '';
+
+    const jsonpMatch = rawText.match(/^([a-zA-Z0-9_$.]+)\s*\(([\s\S]*)\)\s*;?$/);
+    if (jsonpMatch) {
+      isJsonp = true;
+      jsonpPrefix = jsonpMatch[1] + '(';
+      jsonpSuffix = ');';
+      rawText = jsonpMatch[2].trim(); // Extract purely the inner JSON string
+    }
+
+    // Verify valid JSON boundaries
+    if (!looksLikeJson(rawText)) {
+      return false;
+    }
+
+    let jsonObject;
+    try {
+      jsonObject = JSON.parse(rawText);
+    } catch (err) {
+      return false;
+    }
+
+    // Clear existing unformatted document
+    document.body.innerHTML = '';
+
+    const pre = document.createElement('pre');
+    pre.id = 'json-rendered';
+
+    // Re-attach JSONP wrapper prefix if applicable
+    if (isJsonp) {
+      const prefixSpan = document.createElement('span');
+      prefixSpan.style.color = '#dcdcaa'; // Yellow function call highlight
+      prefixSpan.textContent = jsonpPrefix + '\n';
+      pre.appendChild(prefixSpan);
+    }
+
+    // Render color-coded DOM tree
+    pre.appendChild(buildJsonDom(jsonObject, isJsonp ? 1 : 0));
+
+    // Re-attach JSONP wrapper suffix if applicable
+    if (isJsonp) {
+      const suffixSpan = document.createElement('span');
+      suffixSpan.style.color = '#dcdcaa';
+      suffixSpan.textContent = '\n' + jsonpSuffix;
+      pre.appendChild(suffixSpan);
+    }
+
+    document.body.appendChild(pre);
+    return true;
+  }
+
+  // Ensure DOM is parsed before extracting content
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', formatJsonPage);
   } else {
